@@ -1,0 +1,4 @@
+agent,userType,policy_number,company_name,category_name,policy_start_date,policy_end_date,account_name,email,gender,firstname,phone,address,state,zip,dob
+Demo Agent,Active Client,DEMO-001,Demo Insurance,Personal Auto,2026-01-01,2027-01-01,Demo Household,alex@example.com,,Alex Example,2025550100,100 Example Street,CA,00123,1990-02-15
+Demo Agent,Active Client,DEMO-002,Demo Insurance,Homeowners,2026-02-01,2027-02-01,Demo Household,alex@example.com,,Alex Example,2025550100,100 Example Street,CA,00123,1990-02-15
+Demo Agent,Active Client,DEMO-003,Demo Insurance,Personal Auto,2026-01-01,2027-01-01,Other Household,alex@example.com,,Taylor Example,2025550101,200 Example Street,CA,00124,1992-03-15

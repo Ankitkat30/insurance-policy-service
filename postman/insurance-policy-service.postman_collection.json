@@ -1,0 +1,213 @@
+{
+  "info": {
+    "name": "Insurance Policy Assessment",
+    "description": "JavaScript worker imports, policy queries and durable scheduling. Import the environment, choose a file on the upload request, and run in order.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "x-api-key",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "{{apiKey}}",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "jobId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/health",
+        "description": ""
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test(\"Healthy\", () => pm.response.to.have.status(200));"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Import CSV or XLSX",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/api/imports",
+        "description": "Select examples/sample.csv or your assessment file for the file field. Do not set Content-Type manually. Request timeout should exceed 120 seconds.",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": null
+            }
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Import succeeds\", () => pm.response.to.have.status(200));",
+              "pm.test(\"No rejected rows\", () => pm.expect(pm.response.json().rejected).to.eql(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Search policies by name or email",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/policies/search?username={{username}}&page=1&limit=20",
+        "description": ""
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Search succeeds\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Paginated data\", () => pm.expect(pm.response.json().data).to.be.an(\"array\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Aggregate policies by user",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/policies/aggregate?page=1&limit=20",
+        "description": ""
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test(\"Aggregation succeeds\", () => pm.response.to.have.status(200));"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Schedule message (one minute from now)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/messages/schedule",
+        "description": "Persists a pending job immediately; the messages collection receives the message only when due.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"message\": \"Assessment reminder\",\n  \"day\": \"{{day}}\",\n  \"time\": \"{{time}}\",\n  \"timezone\": \"UTC\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const when = new Date(Date.now() + 60000).toISOString();",
+              "pm.variables.set(\"day\", when.slice(0, 10));",
+              "pm.variables.set(\"time\", when.slice(11, 19));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Schedule created\", () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) pm.collectionVariables.set(\"jobId\", pm.response.json()._id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get schedule status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/messages/schedules/{{jobId}}",
+        "description": ""
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test(\"Schedule found\", () => pm.response.to.have.status(200));"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List delivered messages",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/messages?page=1&limit=20",
+        "description": ""
+      },
+      "response": []
+    },
+    {
+      "name": "Find delivery for scheduled job",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/messages?jobId={{jobId}}",
+        "description": "Run after the scheduled minute. Expect one message after delivery, zero before."
+      },
+      "response": []
+    }
+  ]
+}
